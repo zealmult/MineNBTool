@@ -277,9 +277,9 @@ function closeModal() {
 
 // ========== AI 聊天功能 ==========
 // BreathAI API设置
-const AI_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
-const AI_API_KEY = 'sk-xoczxjnmqfztudahsokcwvclodvmvoguyvcjamtuywoolqrl';
-const AI_MODEL = 'deepseek-ai/DeepSeek-V3.1-Terminus';
+const AI_API_URL = 'https://chat.breathai.top/api/v1/chat/completions';
+const AI_API_KEY = 'sk-51651cbb8d0a4f21b02708520f55493f';
+const AI_MODEL = 'deepseek-v3.1-terminus';
 
 // Minecraft指令专家的系统提示词
 const MINECRAFT_PROMPT = `你是一个 Minecraft 指令师，你需要生成用户想要的 Minecraft 指令，并教导用户相关的指令知识。
@@ -612,5 +612,6 @@ function clearAllData() {
     window.location.reload();
   }
 }
+
 
 
