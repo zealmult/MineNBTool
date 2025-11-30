@@ -11,19 +11,19 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   // 构建自定义附魔UI
   buildUserEnchantsUI();
-  
+
   // 检查公告卡片可见性
   checkNoticeCardVisibility();
-  
+
   // 初始化深色模式
   detectColorScheme();
   setupColorSchemeListener();
-  
+
   // 初始化聊天
   const userMessageInput = document.getElementById('userMessage');
   if (userMessageInput) {
     initChat();
-    
+
     userMessageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault(); // 阻止默认的换行
@@ -277,9 +277,9 @@ function closeModal() {
 
 // ========== AI 聊天功能 ==========
 // BreathAI API设置
-const AI_API_URL = 'https://chat.breathai.top/api/v1/chat/completions';
-const AI_API_KEY = 'sk-51651cbb8d0a4f21b02708520f55493f';
-const AI_MODEL = 'deepseek-v3.1-terminus';
+const AI_API_URL = 'https://api.breathai.top/v1/chat/completions';
+const AI_API_KEY = 'sk-qnGAHcb3W4n1yvOFfyQQqguJdFsYLjVYm5zEA1PqC6vAolOh';
+let CURRENT_MODEL = 'glm-4.5-air'; // 默认模型
 
 // Minecraft指令专家的系统提示词
 const MINECRAFT_PROMPT = `你是一个 Minecraft 指令师，你需要生成用户想要的 Minecraft 指令，并教导用户相关的指令知识。
@@ -324,7 +324,7 @@ let chatHistory = [];
 // 添加消息到聊天区域（支持Markdown）
 function addMessage(content, isUser = false, isWelcome = false) {
   const messagesContainer = document.getElementById('chatMessages');
-  
+
   if (isUser) {
     // 用户消息 - 简单添加
     const messageDiv = document.createElement('div');
@@ -345,40 +345,40 @@ function addMessage(content, isUser = false, isWelcome = false) {
       // 普通AI消息 - 添加容器和计时器
       const messageContainer = document.createElement('div');
       messageContainer.className = 'ai-message-container';
-      
+
       // 创建消息本体
       const messageDiv = document.createElement('div');
       messageDiv.className = 'message ai-message';
-      
+
       // 转换 Markdown 为 HTML
       messageDiv.innerHTML = marked.parse(content);
-      
+
       // 创建计时器
       const timerSpan = document.createElement('span');
       timerSpan.className = 'ai-timer';
       timerSpan.textContent = '0.0秒';
       timerSpan.dataset.startTime = Date.now().toString();
-      
+
       // 添加到容器
       messageContainer.appendChild(messageDiv);
       messageContainer.appendChild(timerSpan);
-      
+
       // 添加容器到聊天区域
       messagesContainer.appendChild(messageContainer);
-      
+
       // 开始计时器
       const timerId = setInterval(() => {
         const startTime = parseInt(timerSpan.dataset.startTime);
         const elapsedSeconds = (Date.now() - startTime) / 1000;
         timerSpan.textContent = elapsedSeconds.toFixed(1) + '秒';
       }, 100);
-      
+
       // 保存计时器ID以便后续停止
       timerSpan.dataset.timerId = timerId.toString();
-      
+
       // 滚动到底部
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      
+
       return messageDiv;
     }
   }
@@ -386,11 +386,29 @@ function addMessage(content, isUser = false, isWelcome = false) {
 
 // 初始化聊天，设置系统消息
 function initChat() {
+  // 恢复用户保存的模型偏好
+  const savedModel = localStorage.getItem('preferredModel');
+  if (savedModel) {
+    CURRENT_MODEL = savedModel;
+    const modelSelect = document.getElementById('aiModelSelect');
+    if (modelSelect) {
+      modelSelect.value = savedModel;
+    }
+    const modelDisplay = document.getElementById('currentModelDisplay');
+    if (modelDisplay) {
+      const displayNames = {
+        'glm-4.5-air': 'GLM-4.5-Air',
+        'gemini-2.5-flash': 'Gemini-2.5-Flash'
+      };
+      modelDisplay.textContent = displayNames[savedModel] || savedModel;
+    }
+  }
+
   // 清空现有历史
   chatHistory = [];
   // 添加系统提示
   chatHistory.push({ role: 'system', content: MINECRAFT_PROMPT });
-  
+
   // 添加欢迎消息，标记为欢迎消息
   const welcomeMessage = '你好！我是 Minecraft 指令师。有什么 Minecraft 指令相关的问题需要帮助吗？';
   addMessage(welcomeMessage, false, true);
@@ -402,35 +420,58 @@ function clearMessages() {
   initChat();
 }
 
+// 切换AI模型
+function switchModel() {
+  const modelSelect = document.getElementById('aiModelSelect');
+  const newModel = modelSelect.value;
+  CURRENT_MODEL = newModel;
+
+  // 更新显示的模型名称
+  const modelDisplay = document.getElementById('currentModelDisplay');
+  if (modelDisplay) {
+    const displayNames = {
+      'glm-4.5-air': 'GLM-4.5-Air',
+      'gemini-2.5-flash': 'Gemini-2.5-Flash'
+    };
+    modelDisplay.textContent = displayNames[newModel] || newModel;
+  }
+
+  // 清空聊天历史并重新初始化
+  clearMessages();
+
+  // 保存用户的模型偏好
+  localStorage.setItem('preferredModel', newModel);
+}
+
 // 发送消息到AI并处理回复
 async function sendMessage() {
   const userMessageInput = document.getElementById('userMessage');
   const userMessage = userMessageInput.value.trim();
-  
+
   if (!userMessage) return;
-  
+
   // 添加用户消息到聊天
   addMessage(userMessage, true);
-  
+
   // 清空输入框
   userMessageInput.value = '';
-  
+
   // 添加加载中消息
   const loadingMessage = addMessage('AI 正在思考，需要 3-5 秒...', false);
   loadingMessage.classList.add('loading-message');
-  
+
   // 获取计时器元素
   const timerSpan = loadingMessage.nextElementSibling;
-  
+
   // 更新聊天历史（排除系统消息，仅添加用户消息）
   // 如果历史为空，添加系统消息
   if (chatHistory.length === 0) {
     chatHistory.push({ role: 'system', content: MINECRAFT_PROMPT });
   }
-  
+
   // 添加用户消息
   chatHistory.push({ role: 'user', content: userMessage });
-  
+
   try {
     // 创建请求选项
     const requestOptions = {
@@ -440,37 +481,37 @@ async function sendMessage() {
         'Authorization': `Bearer ${AI_API_KEY}`
       },
       body: JSON.stringify({
-        model: AI_MODEL,
+        model: CURRENT_MODEL,
         messages: chatHistory,
         stream: true
       })
     };
-    
+
     // 发送流式请求
     const response = await fetch(AI_API_URL, requestOptions);
-    
+
     if (!response.ok) {
       throw new Error(`API错误: ${response.status}`);
     }
-    
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let aiResponse = '';
-    
+
     // 一旦开始接收数据，更改加载消息为空白（准备接收流式内容）
     loadingMessage.textContent = '';
     loadingMessage.classList.remove('loading-message');
-    
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      
+
       // 解码接收到的数据块
       const chunk = decoder.decode(value, { stream: true });
-      
+
       // 处理返回的SSE数据
       const lines = chunk.split('\n');
-      
+
       for (const line of lines) {
         if (line.startsWith('data:') && line !== 'data: [DONE]') {
           try {
@@ -488,10 +529,10 @@ async function sendMessage() {
         }
       }
     }
-    
+
     // 更新聊天历史
     chatHistory.push({ role: 'assistant', content: aiResponse });
-    
+
     // 停止计时器并显示最终时间
     if (timerSpan && timerSpan.dataset.timerId) {
       clearInterval(parseInt(timerSpan.dataset.timerId));
@@ -499,13 +540,13 @@ async function sendMessage() {
       const elapsedSeconds = (Date.now() - startTime) / 1000;
       timerSpan.textContent = elapsedSeconds.toFixed(1) + '秒';
     }
-    
+
   } catch (error) {
     console.error('AI聊天错误:', error);
     // 更新加载消息为错误信息
     loadingMessage.textContent = '发生错误，请重试。';
     loadingMessage.classList.add('error-message');
-    
+
     // 停止计时器
     if (timerSpan && timerSpan.dataset.timerId) {
       clearInterval(parseInt(timerSpan.dataset.timerId));
@@ -523,7 +564,7 @@ function detectColorScheme() {
     document.documentElement.setAttribute('data-theme', savedTheme);
     return;
   }
-  
+
   // 如果用户没有设置偏好，则检测系统偏好
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -536,7 +577,7 @@ function detectColorScheme() {
 function toggleDarkMode() {
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
   const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
+
   document.documentElement.setAttribute('data-theme', newTheme);
   // 保存偏好到本地存储
   localStorage.setItem('theme', newTheme);
@@ -546,7 +587,7 @@ function toggleDarkMode() {
 function setupColorSchemeListener() {
   if (window.matchMedia) {
     const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     // 如果用户没有明确设置偏好，则跟随系统变化
     colorSchemeQuery.addEventListener('change', (e) => {
       // 仅当用户没有自定义设置时才跟随系统
@@ -563,7 +604,7 @@ function closeNoticeCard() {
   const noticeCard = document.getElementById('noticeCard');
   if (noticeCard) {
     noticeCard.style.display = 'none';
-    
+
     // 记住用户已关闭公告卡片
     localStorage.setItem('noticeCardClosed', 'true');
   }
@@ -586,28 +627,28 @@ function clearAllData() {
   if (confirm('确定要清除所有数据吗？这将删除您的所有自定义附魔、历史记录和设置，包括已关闭的通知卡片等。此操作无法撤销。')) {
     // 清除所有本地存储
     localStorage.clear();
-    
+
     // 重置自定义附魔数组
     userEnchants = [];
-    
+
     // 重建UI
     buildUserEnchantsUI();
-    
+
     // 重新显示通知卡片
     const noticeCard = document.getElementById('noticeCard');
     if (noticeCard) {
       noticeCard.style.display = 'block';
     }
-    
+
     // 重置聊天历史
     clearMessages();
-    
+
     // 重置主题为系统默认
     detectColorScheme();
-    
+
     // 提示用户
     alert('所有数据已清除。页面将刷新以应用更改。');
-    
+
     // 刷新页面以确保所有更改生效
     window.location.reload();
   }

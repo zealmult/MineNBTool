@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8" />
   <title>MineNBTool</title>
@@ -10,6 +11,7 @@
   <!-- 引入 Markdown 渲染库 -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
+
 <body>
   <!-- 顶部栏 -->
   <header>
@@ -251,15 +253,25 @@
         <button class="button" onclick="generateCommand()">生成命令</button>
         <!-- 复制命令按钮 -->
         <button class="button" style="margin-left:8px;" onclick="copyCommand()">复制命令</button>
-        
-        <textarea id="result" class="text-field" readonly placeholder="这里会显示生成的命令" style="height:100px; margin-top: 12px;"></textarea>
+
+        <textarea id="result" class="text-field" readonly placeholder="这里会显示生成的命令"
+          style="height:100px; margin-top: 12px;"></textarea>
       </div>
     </div>
 
     <!-- ========== AI 聊天页面 ========== -->
     <div id="aiChatPage" class="page-content">
       <div class="card">
-        <h2>AI 聊天</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 style="margin: 0;">AI 聊天</h2>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="aiModelSelect" style="font-size: 14px; white-space: nowrap;">选择模型：</label>
+            <select id="aiModelSelect" class="text-field" style="width: 180px; padding: 8px;" onchange="switchModel()">
+              <option value="glm-4.5-air">GLM-4.5-Air</option>
+              <option value="gemini-2.5-flash">Gemini-2.5-Flash</option>
+            </select>
+          </div>
+        </div>
         <div class="chat-container">
           <div class="chat-messages" id="chatMessages">
             <!-- 聊天消息将在这里动态添加 -->
@@ -273,7 +285,8 @@
           </div>
         </div>
         <div class="chat-footer">
-          <p>由 <a href="https://breathai.top" target="_blank">BreathAI（breathai.top）</a> 提供支持。使用 DeepSeek-V3.1-Terminus 大模型。</p>
+          <p>由 <a href="https://breathai.top" target="_blank">BreathAI（breathai.top）</a> 提供支持。当前模型：<span
+              id="currentModelDisplay">GLM-4.5-Air</span></p>
         </div>
       </div>
     </div>
@@ -364,5 +377,5 @@
   <!-- 引入外部 JavaScript 文件 -->
   <script src="js/script.js"></script>
 </body>
-</html>
 
+</html>
